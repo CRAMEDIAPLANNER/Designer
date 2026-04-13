@@ -578,6 +578,10 @@ async function callClaude(messages, system="", maxTokens=4096, retries=3) {
       const msg = data?.error?.message || data?.error || JSON.stringify(data);
       throw new Error(`API error ${resp.status}: ${msg}`);
     }
+    if (data?.type==="error" && data?.error?.type==="overloaded_error") {
+      if (i===retries-1) throw new Error("API sobrecargada. Espera unos segundos e inténtalo de nuevo.");
+      await new Promise(r=>setTimeout(r,(i+1)*9000)); continue;
+    }
     if (!data.content) {
       throw new Error(`Respuesta inesperada: ${JSON.stringify(data)}`);
     }
