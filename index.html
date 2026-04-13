@@ -536,7 +536,7 @@
 
 <!-- ── JSX ARTIFACT ── -->
 <script type="text/babel">
-
+const { useState, useRef, useCallback, useEffect } = React;
 
 const readBuf  = f => new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsArrayBuffer(f);});
 const readText = f => new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsText(f);});
