@@ -1399,7 +1399,7 @@ Analiza el documento y devuelve SOLO JSON sin markdown:
     {
       "heading": "título de sección en estilo ${visualSystem.tone}",
       "level": 1,
-      "contentType": "insight|stats|bullets|table|mixed|narrative",
+      "contentType": "insight|stats|bullets|table|narrative",
       "content": "TODO el contenido HTML de la sección sin omitir nada. Preserva <table>, <strong>, <em> y demás etiquetas HTML exactamente como aparecen."
     }
   ]
@@ -1467,7 +1467,7 @@ ${text}`
       const renderSection=(sec,idx)=>{
         const divider = idx>0 ? `<div class="sec-divider"></div>` : "";
         const raw     = sec.content||"";
-        const ct      = sec.contentType||"narrative";
+        const ct      = (sec.contentType==="mixed"?"bullets":sec.contentType)||"narrative";
         const headBlock = sec.heading ? `
 <div class="sec-head">
   <div class="sec-num">${String(idx+1).padStart(2,"0")}</div>
