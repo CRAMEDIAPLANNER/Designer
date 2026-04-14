@@ -27,7 +27,7 @@
       --ice:   #e8edf5;
       --text:  #1a1a2e;
       --muted: rgba(26,39,68,0.55);
-      --font-display: 'Syne', sans-serif;
+      --font-display: 'Times New Roman', Times, serif;
       --font-body: 'DM Sans', sans-serif;
       --font-mono: 'DM Mono', monospace;
     }
@@ -82,7 +82,7 @@
 
     .nav-title {
       font-family: var(--font-display);
-      font-weight: 800;
+      font-weight: 300;
       font-size: 1rem;
       color: white;
       letter-spacing: -0.02em;
@@ -181,7 +181,7 @@
 
     .hero h1 {
       font-family: var(--font-display);
-      font-weight: 800;
+      font-weight: 300;
       font-size: clamp(2.4rem, 6vw, 4rem);
       line-height: 1.05;
       letter-spacing: -0.04em;
@@ -317,7 +317,7 @@
     .donate-text h3 {
       font-family: var(--font-display);
       font-size: 1.15rem;
-      font-weight: 700;
+      font-weight: 300;
       color: white;
       margin-bottom: 0.3rem;
     }
@@ -438,7 +438,7 @@
 <section class="hero">
   <div class="hero-inner">
     <span class="hero-eyebrow">✦ Powered by Claude AI</span>
-    <h1>Documentos que<br/><em>impresionan.</em></h1>
+    <h1>Documentos que<br/><em>Impresionan</em></h1>
     <p>Sube tu informe, elige el estilo editorial y genera un PDF o PowerPoint con diseño profesional en segundos.</p>
     <div class="hero-pills">
       <span class="hpill">PDF A4</span>
@@ -561,7 +561,7 @@ async function extractText(file) {
   return readText(file);
 }
 
-async function callClaude(messages, system="", maxTokens=4096, retries=3) {
+async function callClaude(messages, system="", maxTokens=4096, retries=6) {
   for (let i=0; i<retries; i++) {
     const payload = JSON.stringify({model:"claude-sonnet-4-20250514", max_tokens:maxTokens, system, messages});
     const resp = await fetch("https://rapid-mode-5f67.chusraf.workers.dev/", {
@@ -571,7 +571,7 @@ async function callClaude(messages, system="", maxTokens=4096, retries=3) {
     });
     if (resp.status===529) {
       if (i===retries-1) throw new Error("API sobrecargada (529). Espera unos segundos.");
-      await new Promise(r=>setTimeout(r,(i+1)*9000)); continue;
+      await new Promise(r=>setTimeout(r,(i+1)*15000)); continue;
     }
     const data = await resp.json();
     if (!resp.ok) {
@@ -580,7 +580,7 @@ async function callClaude(messages, system="", maxTokens=4096, retries=3) {
     }
     if (data?.type==="error" && data?.error?.type==="overloaded_error") {
       if (i===retries-1) throw new Error("API sobrecargada. Espera unos segundos e inténtalo de nuevo.");
-      await new Promise(r=>setTimeout(r,(i+1)*9000)); continue;
+      await new Promise(r=>setTimeout(r,(i+1)*15000)); continue;
     }
     if (!data.content) {
       throw new Error(`Respuesta inesperada: ${JSON.stringify(data)}`);
@@ -1524,28 +1524,42 @@ ${paras.map(p=>{
 }).join("\n")}
 </div>`;
 
-        // ── Mixed (3-item opp cards) ──
+    // ── Mixed (3-item opp cards) — only if content has 2-3 clear short blocks ──
         } else if(ct==="mixed"){
           const paras = raw.split(/\n{2,}/).filter(p=>p.trim());
-          const schemes=[
-            {cls:"opp-red",icon:"❌",lbl:"Punto crítico"},
-            {cls:"opp-yellow",icon:"⚡",lbl:"Oportunidad"},
-            {cls:"opp-green",icon:"🚀",lbl:"Potencial"},
-          ];
-          bodyHtml=`<div class="highlight-row">
+          const useCards = paras.length >= 2 && paras.length <= 3 && paras.every(p=>p.replace(/<[^>]+>/g,"").length < 300);
+          if (useCards) {
+            const schemes=[
+              {cls:"opp-green",icon:"",lbl:"Fortaleza"},
+              {cls:"opp-yellow",icon:"",lbl:"Oportunidad"},
+              {cls:"opp-red",icon:"",lbl:"Riesgo"},
+            ];
+            bodyHtml=`<div class="highlight-row">
 ${paras.slice(0,3).map((p,i)=>{
   const txt=p.replace(/<[^>]+>/g,"").replace(/\n/g," ").trim();
   const m=txt.match(/^([^:\.]{3,40})[:\.](.+)/s);
   const title=m?m[1].trim():schemes[i%3].lbl;
   const body =m?m[2].trim():txt;
   return `<div class="opp-card ${schemes[i%3].cls}">
-  <div class="highlight-icon">${schemes[i%3].icon}</div>
   <div class="opp-lbl">${esc(title)}</div>
   <div class="opp-txt">${esc(body)}</div>
 </div>`;
 }).join("\n")}
 </div>`;
-
+          } else {
+            if (isHtml(raw)) {
+              bodyHtml=`<div class="sec-body">${sanitizeHtml(raw)}</div>`;
+            } else {
+              const allParas = raw.split(/\n+/).filter(p=>p.trim());
+              bodyHtml=`<div class="sec-body">
+${allParas.map(p=>{
+  const clean = p.replace(/^[-\u2022\u00b7]\s*/,"");
+  const h = isHtml(clean) ? sanitizeHtml(clean) : mdBoldToHtml(esc(clean));
+  return `<div class="li"><div class="li-sq"></div><div class="li-t">${h}</div></div>`;
+}).join("\n")}
+</div>`;
+            }
+          }
         // ── Narrative / default — preserve HTML or convert md bold ──
         } else {
           if (isHtml(raw)) {
